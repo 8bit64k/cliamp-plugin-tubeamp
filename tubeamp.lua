@@ -31,7 +31,6 @@ local cfg_overdrive   = tonumber(p:config("overdrive")) or 0.78
 
 local ESC = string.char(27)
 local function fg256(n)  return ESC .. "[38;5;" .. n .. "m" end
-local function bg256(n)  return ESC .. "[48;5;" .. n .. "m" end
 local function bold()    return ESC .. "[1m"  end
 local function reset()   return ESC .. "[0m"  end
 

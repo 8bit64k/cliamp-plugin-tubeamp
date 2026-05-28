@@ -680,4 +680,4 @@ Before declaring any change "done," verify:
 
 ---
 
-*Last reviewed: 2026-05-28. Version covered: tubeamp 1.0.0.*
+*Last reviewed: 2026-05-28. Version covered: tubeamp 1.2.0.*
