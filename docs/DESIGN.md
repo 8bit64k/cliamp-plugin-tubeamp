@@ -304,16 +304,43 @@ end
 
 ### Layout
 
+Layout adapts to terminal size in four tiers via `pick_layout(rows, cols)`:
+
+| Tier | Min cols | Min rows | Components |
+|------|----------|----------|-----------|
+| **FULL**    | 53 (`4 + 10×4 + 9×1`) | 5 (top + filament + bot + VU + label) | rails, envelopes, filaments, VU, frequency labels |
+| **COMPACT** | 39 (`10×3 + 9×1`)     | 4 (top + filament + bot + VU)         | envelopes + filaments + VU; no rails, no labels |
+| **MINI**    | 19 (`10×1 + 9×1`)     | 3 (≥2 filament + VU)                  | 1-char glow columns + thin VU; no envelopes |
+| **HIDDEN**  | otherwise             | otherwise                             | returns `""` (nothing drawn) |
+
+**Why tiered, not continuous:** the visual identity (envelopes, rails, labels) breaks down at small sizes. A smooth scaling function would produce ugly fractional widths and broken glyph alignment. Discrete tiers let each layout be tuned independently.
+
+**Width fill behavior in FULL tier:**
+
+1. Start at `tube_w = TUBE_W_MIN (4)`.
+2. Grow `tube_w` toward `TUBE_W_MAX (9)` as long as it fits.
+3. Grow `gap` toward `GAP_MAX (5)` as long as it fits.
+4. Whatever cols remain become symmetric left/right padding (centering).
+
+This means narrow-to-medium terminals fully use their width; very wide terminals stop expanding gaps before they look like a sparse fence, and the remainder pads to center the block. Realistic terminal sizes (80–160 cols) end up >95% utilized.
+
+```lua
+local TUBE_W_MIN = 4   -- minimum tube width for FULL tier (with rails)
+local TUBE_W_MAX = 9   -- maximum tube width (above this, tubes look stretched)
+local GAP_MAX    = 5   -- maximum inter-tube gap when stretching to fill width
+```
+
+**Why HIDDEN exists:** when the terminal is too small to fit even the MINI tier (cols < 19 or rows < 3), wrapping mini-tubes across multiple visual rows looks broken. Returning `""` (an empty string is a valid Lua return that cliamp passes through verbatim) means the pane goes blank until the user resizes back up. State (smoothed levels, peak hold, afterglow) is updated on every render regardless of tier, so resizing back to a visible tier resumes mid-flow rather than starting cold.
+
 ```lua
 local function tube_width(cols)
-    local usable = cols - 4              -- 4 cols for the side rails (║ + space)
+    local usable = cols - 4
     local per = math.floor(usable / 10)
-    return clamp(per, 4, 9)              -- min 4 (legible glass + 2-char filament),
-                                         -- max 9 (above that the tubes look weirdly stretched)
+    return clamp(per, 4, 9)
 end
 ```
 
-Tube width adapts to terminal cols. Rows are allocated as: 1 glass top + N filament rows + 1 glass base + 1 VU needle row + 1 chassis label = `rows`. Filament rows clamped to [3, 14] so very tall fullscreen panes don't produce a single absurd tube.
+The above (from v1.0.0) was replaced in v1.1.0 by `pick_layout(rows, cols)`, which returns a struct containing tube_w, gap, left_pad, plus boolean flags for which optional rows (rails, envelope, VU, labels) to render.
 
 ### The render pipeline
 
@@ -571,8 +598,8 @@ cp tubeamp.lua ~/.config/cliamp/plugins/
 
 1. **No truecolor mode.** Users on terminals that render 256 colors poorly (rare) will see banding in the warm ramp. The fix would be a runtime detection of `COLORTERM=truecolor` and a secondary `fg24(r,g,b)` path. Not done because we have no way to read env vars… actually, the sandbox does expose `os.getenv()` — so this is a one-liner to add in v2.
 2. **No fractional Unicode block fill.** First-party `vis_bars.go` uses `▁▂▃▄▅▆▇█` for sub-row vertical resolution. Tubeamp uses `░▒▓█` instead, which is more shading than partial fill. The trade-off: shade glyphs look like glowing density (correct for tubes), partial-block glyphs look like discrete bar tips (correct for bars). Reconsider if the v2 brief is "more precise level reading."
-3. **Peak marker centering glitch on width=4 tubes.** At minimum width (4 cols → 2-col inner), the peak `●` displaces one of the two filament cells. It's a known visual hiccup at the smallest tube size. Either widen the minimum to 5 or skip the peak marker when `inner_w < 3` (already done — the marker is gated on `inner_w >= 3`).
-4. **Smoothing is not dt-aware.** If cliamp's tick rate changes (it does — TickSlow at 200ms during pauses), the smoother converges per-tick at the same rate regardless of wall-clock dt. In practice this is fine because the visible motion during slow ticks is minimal. A dt-aware smoother would be more correct but adds complexity for a benefit users won't notice.
+3. **Smoothing is not dt-aware.** If cliamp's tick rate changes (it does — TickSlow at 200ms during pauses), the smoother converges per-tick at the same rate regardless of wall-clock dt. In practice this is fine because the visible motion during slow ticks is minimal. A dt-aware smoother would be more correct but adds complexity for a benefit users won't notice.
+4. **Wide-terminal cap.** Above ~165 cols, the FULL tier stops expanding and centers the block. Tubes don't sprawl across a 200-col terminal because they'd look like islands. This is a deliberate choice; v2 could expose `max_block_width` as config if users want different behavior.
 
 ### v2 ideas
 

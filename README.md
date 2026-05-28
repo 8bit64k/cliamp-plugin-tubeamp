@@ -67,6 +67,19 @@ overdrive = 0.78
 - **cliamp** 1.x (Lua plugin API with `type = "visualizer"`)
 - Terminal: any with ANSI 256-color support (essentially everything modern: xterm, kitty, wezterm, alacritty, ghostty, foot, iTerm2, Windows Terminal)
 
+## Responsive layout
+
+Tubeamp adapts to the visualizer pane size in four tiers:
+
+| Tier | Width | Rows | Looks like |
+|------|-------|------|-----------|
+| FULL    | ≥ 53 cols | ≥ 5 rows | rails, gaps, envelopes, filaments, VU, frequency labels |
+| COMPACT | ≥ 39 cols | ≥ 4 rows | no rails, tight gaps, envelopes + filaments + VU |
+| MINI    | ≥ 19 cols | ≥ 3 rows | bare 1-char glow columns + thin VU; no envelopes, no labels |
+| HIDDEN  | otherwise | otherwise | empty (visualizer renders nothing) |
+
+In the FULL tier the layout stretches gaps up to 5 chars before centering, so wide terminals look balanced rather than left-anchored. The state (smoothed level, peak hold, afterglow) carries across resizes so resizing back up doesn't reveal cold tubes.
+
 ## How it looks
 
 Each frame the plugin computes:
