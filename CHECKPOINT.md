@@ -20,7 +20,7 @@ Single-file Lua, ANSI 256-color, ~480 lines.
 | Default branch | `master` |
 | Latest tag | `v1.2.0` |
 | Release | https://github.com/8bit64k/cliamp-plugin-tubeamp/releases/tag/v1.2.0 |
-| Install path (Nick's machines) | `~/.config/cliamp/plugins/tubeamp.lua` |
+| Install path (8bit64k's machines) | `~/.config/cliamp/plugins/tubeamp.lua` |
 | Authoritative design doc | `docs/DESIGN.md` (32 KB, 15 sections, agent-handoff-ready) |
 | Demo GIF | `assets/cliamp-tubeamp-01.gif` (4 MB after `gifsicle -O3 --colors 256 --lossy=80`) |
 
@@ -41,7 +41,7 @@ Single-file Lua, ANSI 256-color, ~480 lines.
 - Lua syntax check (clean parse)
 - Standalone render harness across 5 brightness scenes (idle, quiet bass, rock mix, overdrive, max)
 - Layout sweep across 15 size combinations (200 cols → 18 cols, 22 rows → 2 rows) — no overflow at any size, all tiers transition cleanly
-- Real-cliamp smoke test on macOS (Nick) — install/uninstall/play cycle clean, `~/.config/cliamp/plugins.log` empty
+- Real-cliamp smoke test on macOS (8bit64k) — install/uninstall/play cycle clean, `~/.config/cliamp/plugins.log` empty
 - Tier-transition test: state preserved across resize sequence `100 → 40 → 25 → 18 (HIDDEN) → 100` — no cold-tube flicker on resume
 
 ---
@@ -68,7 +68,7 @@ Single-file Lua, ANSI 256-color, ~480 lines.
 
 ## Related parking lot
 
-A sibling project at `~/builds/cliamp-plugin-ascii-eq/` holds the brainstorm for a future cliamp visualizer that animates user-supplied ASCII art from the EQ feed. Paused pending Nick's decisions on:
+A sibling project at `~/builds/cliamp-plugin-ascii-eq/` holds the brainstorm for a future cliamp visualizer that animates user-supplied ASCII art from the EQ feed. Paused pending 8bit64k's decisions on:
 - Combo choice (recommended: column-bob + glow illumination)
 - Test ASCII art file
 - Final plugin name
@@ -79,7 +79,7 @@ See `~/builds/cliamp-plugin-ascii-eq/BRAINSTORM.md` for the full design space (8
 
 ## Notes for the next agent
 
-- The repo uses MIT license, attributed to `8bit64k` (per builds/AGENTS.md — never `Nick`).
+- The repo uses MIT license, attributed to `8bit64k`.
 - Cliamp's plugin manager strips the `cliamp-plugin-` prefix on install, so the user-visible name is `tubeamp`.
 - The entry file `tubeamp.lua` MUST stay at repo root — moving it breaks `cliamp plugins install`.
 - DESIGN.md §15 has the full pre-PR / pre-release checklist.
