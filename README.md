@@ -2,7 +2,9 @@
 
 A vintage **vacuum-tube amplifier** visualizer for [cliamp](https://github.com/bjarneo/cliamp). Each EQ band is rendered as a glowing tube. Filaments heat from warm amber through gold and white-hot, then bleed into red when the signal overdrives. Phosphor afterglow gives tubes that always-warm look — even at idle, the bulbs have a faint ember glow.
 
-![tubeamp running in cliamp — vacuum tubes glowing in time with the music](assets/cliamp-tubeamp-01.gif)
+<p align="center">
+  <img src="assets/cliamp-tubeamp-01.gif" alt="tubeamp running in cliamp — vacuum tubes glowing in time with the music">
+</p>
 
 ```
 ║ ╭─────╮ ╭─────╮ ╭─────╮ ╭─────╮ ╭─────╮ ╭─────╮ ╭─────╮ ╭─────╮ ╭─────╮ ╭─────╮ ║
