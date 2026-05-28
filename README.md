@@ -69,16 +69,28 @@ overdrive = 0.78
 
 ## Responsive layout
 
-Tubeamp adapts to the visualizer pane size in four tiers:
+Tubeamp adapts to the visualizer pane size in four tiers, with row-budget priority **filaments > envelopes > VU > labels** — so even cliamp's default 5-row visualizer pane gets a real-looking tube (envelopes + 3 filament rows), and VU/labels only appear when there's extra height.
 
 | Tier | Width | Rows | Looks like |
 |------|-------|------|-----------|
-| FULL    | ≥ 53 cols | ≥ 5 rows | rails, gaps, envelopes, filaments, VU, frequency labels |
-| COMPACT | ≥ 39 cols | ≥ 4 rows | no rails, tight gaps, envelopes + filaments + VU |
-| MINI    | ≥ 19 cols | ≥ 3 rows | bare 1-char glow columns + thin VU; no envelopes, no labels |
+| FULL    | ≥ 53 cols | ≥ 4 rows | rails + envelopes + filaments; VU at ≥6 rows; labels at ≥9 rows |
+| COMPACT | ≥ 39 cols | ≥ 4 rows | envelopes + filaments; VU at ≥6 rows; labels at ≥9 rows; no rails |
+| MINI    | ≥ 19 cols | ≥ 3 rows | bare 1-char glow columns + thin VU; no envelopes |
 | HIDDEN  | otherwise | otherwise | empty (visualizer renders nothing) |
 
-In the FULL tier the layout stretches gaps up to 5 chars before centering, so wide terminals look balanced rather than left-anchored. The state (smoothed level, peak hold, afterglow) carries across resizes so resizing back up doesn't reveal cold tubes.
+Row-budget progression at any width within FULL/COMPACT:
+
+| Pane rows | Components | Filament rows |
+|-----------|-----------|--------------|
+| 4         | envelopes + filaments | 2 |
+| **5** (cliamp default) | **envelopes + filaments** | **3** |
+| 6         | envelopes + filaments + VU | 3 |
+| 7         | envelopes + filaments + VU | 4 |
+| 8         | envelopes + filaments + VU | 5 |
+| 9         | envelopes + filaments + VU + labels | 5 |
+| 10+       | all four, filaments grow | up to 14 |
+
+In the FULL tier the layout stretches gaps up to 5 chars before centering, so wide terminals look balanced rather than left-anchored. State (smoothed level, peak hold, afterglow) carries across resizes so resizing back up doesn't reveal cold tubes.
 
 ## How it looks
 

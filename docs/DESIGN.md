@@ -306,12 +306,45 @@ end
 
 Layout adapts to terminal size in four tiers via `pick_layout(rows, cols)`:
 
-| Tier | Min cols | Min rows | Components |
-|------|----------|----------|-----------|
-| **FULL**    | 53 (`4 + 10×4 + 9×1`) | 5 (top + filament + bot + VU + label) | rails, envelopes, filaments, VU, frequency labels |
-| **COMPACT** | 39 (`10×3 + 9×1`)     | 4 (top + filament + bot + VU)         | envelopes + filaments + VU; no rails, no labels |
-| **MINI**    | 19 (`10×1 + 9×1`)     | 3 (≥2 filament + VU)                  | 1-char glow columns + thin VU; no envelopes |
-| **HIDDEN**  | otherwise             | otherwise                             | returns `""` (nothing drawn) |
+| Tier | Min cols | Min rows | Width-fixed | Components |
+|------|----------|----------|-------------|-----------|
+| **FULL**    | 53 (`4 + 10×4 + 9×1`) | 4 | tubes 4–9 + gaps 1–5 + rails | rails + envelopes + filaments + (VU at ≥6 rows) + (labels at ≥9 rows) |
+| **COMPACT** | 39 (`10×3 + 9×1`)     | 4 | tubes=3 gaps=1                | envelopes + filaments + (VU at ≥6 rows) + (labels at ≥9 rows) |
+| **MINI**    | 19 (`10×1 + 9×1`)     | 3 | tubes=1 gaps=1                | 1-char glow columns + thin VU; no envelopes |
+| **HIDDEN**  | otherwise             | otherwise | n/a                       | returns `""` |
+
+**Row-budget priority (high → low):** **filaments > envelopes > VU > labels.**
+
+Cliamp's default normal-mode visualizer pane is **5 rows** (constant `DefaultVisRows` in `ui/visualizer.go`). The visualizer pane only grows beyond that when the user toggles full-vis mode with shift+V (`m.height-10)*4/5` in `ui/model/keys.go`). The previous (v1.1.0) layout consumed 4 of those 5 rows for chrome (top envelope + bottom envelope + VU + label), leaving a 1-row filament that didn't read as a tube at all.
+
+v1.2.0 rebalances this. The `alloc_with_envelopes(rows)` helper applies the priority:
+
+```lua
+local function alloc_with_envelopes(rows)
+    if rows < 4 then return nil end       -- need at least envelopes + 2 filament rows
+    local show_vu     = rows >= 6
+    local show_labels = rows >= 9
+    local fixed = 2 + (show_vu and 1 or 0) + (show_labels and 1 or 0)
+    local inner = rows - fixed
+    if inner < 2 then inner = 2 end
+    if inner > 14 then inner = 14 end
+    return inner, show_vu, show_labels
+end
+```
+
+Empirical row → component breakdown at any FULL/COMPACT width:
+
+| Pane rows | Lines | Components                              | Filament rows |
+|-----------|-------|-----------------------------------------|--------------|
+| 4         | 4     | envelopes + filaments                   | 2 |
+| **5** (cliamp default) | 5 | **envelopes + filaments**          | **3** |
+| 6         | 6     | envelopes + filaments + VU              | 3 |
+| 7         | 7     | envelopes + filaments + VU              | 4 |
+| 8         | 8     | envelopes + filaments + VU              | 5 |
+| 9         | 9     | envelopes + filaments + VU + labels     | 5 |
+| 12        | 12    | envelopes + filaments + VU + labels     | 8 |
+| 16        | 16    | envelopes + filaments + VU + labels     | 12 |
+| 18+       | 18    | all four, filaments capped at 14        | 14 |
 
 **Why tiered, not continuous:** the visual identity (envelopes, rails, labels) breaks down at small sizes. A smooth scaling function would produce ugly fractional widths and broken glyph alignment. Discrete tiers let each layout be tuned independently.
 

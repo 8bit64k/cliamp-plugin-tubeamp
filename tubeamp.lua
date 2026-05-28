@@ -16,7 +16,7 @@
 local p = plugin.register({
     name        = "tubeamp",
     type        = "visualizer",
-    version     = "1.1.0",
+    version     = "1.2.0",
     description = "Vintage vacuum-tube amplifier — warm amber glow per EQ band",
 })
 
@@ -90,7 +90,7 @@ local GAP_MAX    = 5   -- maximum inter-tube gap when stretching to fill width
 --
 -- Returns a table:
 --   tier        : "full" | "compact" | "mini" | "hidden"
---   tube_w      : tube width in columns (including 2 envelope chars for full/compact, 0 for mini)
+--   tube_w      : tube width in columns
 --   gap         : inter-tube gap in columns
 --   left_pad    : leading spaces to center the block
 --   show_rails  : boolean
@@ -98,48 +98,50 @@ local GAP_MAX    = 5   -- maximum inter-tube gap when stretching to fill width
 --   show_vu     : boolean
 --   show_labels : boolean
 --   inner_rows  : number of filament rows
+--
+-- Row-budget priority (high → low): filaments > envelopes > VU > labels.
+-- At cliamp's default visualizer height (5 rows), we want the tube to actually
+-- look like a tube — that means envelopes + ≥3 filament rows, no VU or label.
+-- VU and labels are flourishes that only show up when there's spare height.
 local function pick_layout(rows, cols)
     if rows == nil or cols == nil then return { tier = "hidden" } end
 
-    -- Helper: total width = left_rail(2) + 10*tube_w + 9*gap + right_rail(2)
-    -- For tiers without rails, rail cost is 0.
+    -- Helpers for row allocation given an envelope-using tier.
+    -- envelope_cost = 2 (top + bot). Budget the rest in priority order.
+    local function alloc_with_envelopes(rows)
+        if rows < 4 then return nil end       -- need at least envelopes + 2 filament rows
+        local show_vu     = rows >= 6
+        local show_labels = rows >= 9
+        local fixed = 2 + (show_vu and 1 or 0) + (show_labels and 1 or 0)
+        local inner = rows - fixed
+        if inner < 2 then inner = 2 end
+        if inner > 14 then inner = 14 end
+        return inner, show_vu, show_labels
+    end
 
     -- ---------- FULL tier ----------
-    -- Requires: rows >= 6 (1 top + 1 filament + 1 bot + 1 vu + 1 label, and one
-    --   more for a usable filament height; we clamp inner_rows >= 1 but prefer >= 2),
-    --   cols >= 4 (rails) + 10*TUBE_W_MIN + 9 (gaps) = 53.
-    local full_min_cols = 4 + 10 * TUBE_W_MIN + 9  -- 53
-    local full_min_rows = 5                         -- glass top + 1 filament + glass bot + vu + label
+    -- Width needed: rails(4) + 10*TUBE_W_MIN + 9*GAP_MIN = 53.
+    -- Rows needed: 4 (envelopes + 2 filaments).
+    local full_min_cols = 4 + 10 * TUBE_W_MIN + 9   -- 53
+    local full_min_rows = 4
 
     if rows >= full_min_rows and cols >= full_min_cols then
-        -- Tube width grows to TUBE_W_MAX, then gap absorbs leftover up to GAP_MAX,
-        -- then any remainder becomes left padding (centering).
+        local inner, show_vu, show_labels = alloc_with_envelopes(rows)
+
+        -- Width fill: grow tubes to TUBE_W_MAX, then gaps to GAP_MAX, then pad.
         local tube_w = TUBE_W_MIN
-        -- Grow tubes first.
         while tube_w < TUBE_W_MAX do
-            local needed = 4 + 10 * (tube_w + 1) + 9
-            if needed > cols then break end
+            if 4 + 10 * (tube_w + 1) + 9 > cols then break end
             tube_w = tube_w + 1
         end
-        -- Now grow gaps.
         local gap = 1
         while gap < GAP_MAX do
-            local needed = 4 + 10 * tube_w + 9 * (gap + 1)
-            if needed > cols then break end
+            if 4 + 10 * tube_w + 9 * (gap + 1) > cols then break end
             gap = gap + 1
         end
         local used = 4 + 10 * tube_w + 9 * gap
         local left_pad = math.floor((cols - used) / 2)
         if left_pad < 0 then left_pad = 0 end
-
-        -- Allocate rows. We always want top glass + bot glass + at least one
-        -- filament row. VU and labels are optional based on row budget.
-        local show_vu     = rows >= 4
-        local show_labels = rows >= 5
-        local fixed = 2 + (show_vu and 1 or 0) + (show_labels and 1 or 0)
-        local inner_rows = rows - fixed
-        if inner_rows < 1 then inner_rows = 1 end
-        if inner_rows > 14 then inner_rows = 14 end
 
         return {
             tier          = "full",
@@ -150,28 +152,24 @@ local function pick_layout(rows, cols)
             show_envelope = true,
             show_vu       = show_vu,
             show_labels   = show_labels,
-            inner_rows    = inner_rows,
+            inner_rows    = inner,
         }
     end
 
     -- ---------- COMPACT tier ----------
-    -- No rails, gap=1, tube_w=3 (│█│). Minimum width: 10*3 + 9 = 39 cols.
-    -- Drop labels by default; keep VU.
+    -- No rails, tube_w=3, gap=1. Width: 10*3 + 9 = 39.
+    -- Same row-budget logic as FULL since envelopes are still present.
     local compact_min_cols = 10 * 3 + 9   -- 39
-    local compact_min_rows = 4            -- top + 1 filament + bot + vu
+    local compact_min_rows = 4
 
     if rows >= compact_min_rows and cols >= compact_min_cols then
+        local inner, show_vu, show_labels = alloc_with_envelopes(rows)
+
         local tube_w = 3
         local gap = 1
         local used = 10 * tube_w + 9 * gap
         local left_pad = math.floor((cols - used) / 2)
         if left_pad < 0 then left_pad = 0 end
-
-        local show_vu     = rows >= 4
-        local fixed = 2 + (show_vu and 1 or 0)  -- envelope top + bot + optional vu
-        local inner_rows = rows - fixed
-        if inner_rows < 1 then inner_rows = 1 end
-        if inner_rows > 10 then inner_rows = 10 end
 
         return {
             tier          = "compact",
@@ -181,16 +179,16 @@ local function pick_layout(rows, cols)
             show_rails    = false,
             show_envelope = true,
             show_vu       = show_vu,
-            show_labels   = false,
-            inner_rows    = inner_rows,
+            show_labels   = show_labels,
+            inner_rows    = inner,
         }
     end
 
     -- ---------- MINI tier ----------
     -- No envelopes, no rails. Pure 1-char glow columns with 1-char gaps.
-    -- Width: 10*1 + 9 = 19 cols. Always show at least a thin VU strip.
-    local mini_min_cols = 10 + 9          -- 19
-    local mini_min_rows = 3               -- 2 filament + 1 vu (no top/bot envelope)
+    -- Width: 10 + 9 = 19. Always include a thin VU strip if any room.
+    local mini_min_cols = 10 + 9
+    local mini_min_rows = 3
 
     if rows >= mini_min_rows and cols >= mini_min_cols then
         local tube_w = 1
@@ -200,10 +198,10 @@ local function pick_layout(rows, cols)
         if left_pad < 0 then left_pad = 0 end
 
         local show_vu = rows >= 3
-        local fixed = (show_vu and 1 or 0)
-        local inner_rows = rows - fixed
-        if inner_rows < 2 then inner_rows = 2 end
-        if inner_rows > 8 then inner_rows = 8 end
+        local fixed = show_vu and 1 or 0
+        local inner = rows - fixed
+        if inner < 2 then inner = 2 end
+        if inner > 8 then inner = 8 end
 
         return {
             tier          = "mini",
@@ -214,7 +212,7 @@ local function pick_layout(rows, cols)
             show_envelope = false,
             show_vu       = show_vu,
             show_labels   = false,
-            inner_rows    = inner_rows,
+            inner_rows    = inner,
         }
     end
 
