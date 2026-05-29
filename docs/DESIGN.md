@@ -525,7 +525,7 @@ Why not more config? Because everything else is part of the visual identity. The
 ### Syntax check (no host)
 
 ```sh
-lua /home/nick/builds/cliamp-plugin-tubeamp/tubeamp.lua
+lua tubeamp.lua
 ```
 
 Will print "attempt to index a nil value (global 'plugin')" — that's expected if you don't stub the host. A clean syntax error (unexpected symbol, missing end, etc.) will surface here before the host loads it.
@@ -547,7 +547,7 @@ plugin = {
 }
 cliamp = { log = { info = function() end, warn = function() end, error = function() end, debug = function() end } }
 
-dofile("/home/nick/builds/cliamp-plugin-tubeamp/tubeamp.lua")
+dofile("tubeamp.lua")
 
 local p = _G.PLUGIN_OBJ
 if p.init then p:init(20, 80) end
@@ -674,7 +674,7 @@ Before declaring any change "done," verify:
 - [ ] `~/.config/cliamp/plugins.log` has no `[tubeamp] error` entries after a fresh playback session.
 - [ ] README.md reflects the current config keys (no drift between README and `tubeamp.lua`).
 - [ ] If you changed the rendering shape (rows, columns, glyphs, colors), update the ASCII example block near the top of this DESIGN.md and the README.
-- [ ] Commits authored as 8bit64k (per `/home/nick/builds/AGENTS.md`).
+- [ ] Commits authored as 8bit64k (per project dev docs).
 - [ ] Bump `version` in `plugin.register({...})` for any user-visible behavior change.
 - [ ] CHECKPOINT.md updated (if the project gains one). At time of writing, this is a small single-file plugin and a CHECKPOINT isn't warranted — but if scope grows, create one.
 
